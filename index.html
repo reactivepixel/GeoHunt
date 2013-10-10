@@ -1,0 +1,46 @@
+<!doctype html>
+<html ng-app="githubAuth">
+
+	<head>
+ 
+		<title>GeoHunter</title>
+		<link rel="stylesheet" type="text/css" href="inc/css/site.css" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<!-- Angular JS -->
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+
+		<!-- FireBase  -->
+		<script src="https://cdn.firebase.com/v0/firebase.js"></script>
+		<script src='https://cdn.firebase.com/v0/firebase-simple-login.js'></script>
+
+		<!-- Bootstrap -->
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css">
+	</head>
+
+	<body ng-controller="AuthLogic">
+		<div class="container">
+			<header>
+				<ul class="nav nav-pills pull-right" ng-show="user">
+					<li class="active"><a href="#/stepTwo">Current Waypoint</a></li>
+			
+					<li><a href="#/">Logout</a></li>
+				</ul>
+				<h3 class="text-muted">GeoHunter</h3>
+			</header>
+
+			
+
+			<div class="wrapper" ng-view></div>
+			
+		</div>
+		
+		
+	<script src='inc/js/main.js'></script>
+	</body>
+</html>
