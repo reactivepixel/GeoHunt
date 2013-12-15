@@ -1,4 +1,4 @@
-angular.module('githubAuth', [])
+angular.module('githubAuth', ['ngRoute','firebase'])
 .config(['$routeProvider',function(r){
 
 	// Routes
@@ -7,6 +7,10 @@ angular.module('githubAuth', [])
 		templateUrl : 'views/home.tpl',
 	})
 
+	.when('/dashboard',{
+		templateUrl : 'views/status.tpl',
+		controller 	: 'Dashboard',
+	})
 	.when('/loc',{
 		templateUrl : 'views/loc.tpl',
 	})
@@ -68,81 +72,63 @@ angular.module('githubAuth', [])
 
 
 // Core Controller
-.controller('AuthLogic', ['$scope', 'locService', function(s,locService){
+.controller('AuthLogic', ['$scope', 'locService', '$firebase', '$firebaseAuth', '$location',function(s,locService,$firebase,$firebaseAuth,$location){
 	s.title = 'Time to show a detail Page Derp derp';
 	s.user;
-	s.unlocked = false;
-	fbWaypoints.on('value', function(data){
-		s.fbWaypoints = data.val();
-		for(first in s.fbWaypoints){
-			var firstKey = first;
-			break;
-		}
-		s.fbFirstWaypoint = s.fbWaypoints[firstKey]
-		console.log('xxx', s.fbFirstWaypoint);
-	});
+
+	var url = 'https://chapman.firebaseio.com';
+	var sync = $firebase(new Firebase(url)).$bind(s, 'Data');
+	
+	var authRef = new Firebase(url);
+    s.auth = $firebaseAuth(authRef);
+
+
 
     s.loc = locService();
 
 	//Firebase Simple Login Auth Call
 	s.authenticateMe = function(){
-		auth.login('github', {
+		s.auth.$login('github', {
 			rememberMe: true,
 	  		scope: 'user,repo'
+		}).then(function(user){
+			s.regUser(user);
 		});
 	}
 
 
-	s.activeUserLookup = function(){
+	s.regUser = function(user){
 
-			//Fresh Firebase connection, don't trust anything
-			var fbVerify = new Firebase('https://chapman.firebaseio.com/activeUsers');
+		user.progress = 0;
 
-			//When the Data Async loads
-			fbVerify.on('value', function(data){
-				var bMatchFound = false;
-				var activeUsers = data.val();
-				
-				// Loop thru each entry
-				for(user in activeUsers){
-
-					//Check for Duplicate Email, If found, Fail out to error screen
-					if( user.GHID == localUser.GHID ){
-						s.bMatchFound = true;
-						
-						//localUser.waypoints = user.waypoints;
-
-						s.user = activeUsers[user];
-						console.log('Match Discovered', s.user);
-
-
-						window.location = '#/GHID/' + localUser.id;
-						return false;
-						break; // Really dont let anyone pass =P
-					}
-				}
-				// Email Valid? Inject into Firebase
-				if(!bMatchFound){
-					fb.push( {GHID:localUser.id, data: localUser, waypoints: [s.fbFirstWaypoint] } );
-					window.location = '#/GHID/' + localUser.id;
-					return false;
-				}	
-			});
-			
-			
-			
+		if(s.Data.activeUsers == undefined){
+			s.Data.activeUsers = [];
 		}
-		if(localUser){
-			s.activeUserLookup();
+
+		//if user is new
+		if(s.Data.activeUsers[user.id] == undefined){
+			s.Data.activeUsers[user.id] = user;
 		}
+		$location.path('/add');
+	}
+}])
+
+// Dashboard Controller
+.controller('Dashboard', ['$scope', '$routeParams', function(s,params){
+
+	// Don't trust current Firebase connection, create new, and apply error to log
+	//var fbError = new Firebase('https://chapman.firebaseio.com/errors');
+	
+	s.waypoints = s.Data.locations[s.user.progress];
+
 }])
 
 // Error Controller
 .controller('ErrorLogic', ['$scope', '$routeParams', function(s,params){
 
 	// Don't trust current Firebase connection, create new, and apply error to log
-	var fbError = new Firebase('https://chapman.firebaseio.com/errors');
-	fbError.push({params:params});
+	//var fbError = new Firebase('https://chapman.firebaseio.com/errors');
+	s.Data.errors.push({params:params});
 	s.errorMsg = 'An error has occurred. [code: ' + params.msg + ']';
 	
 }])
@@ -152,8 +138,10 @@ angular.module('githubAuth', [])
 
 	// Don't trust current Firebase connection, create new, and apply error to log
 	s.pushWaypoint = function(){
-		var fbError = new Firebase('https://chapman.firebaseio.com/waypoints');
-		fbError.push({title: s.TitleInput, clue: s.ClueInput, instruction: s.InstructionInput, lat: s.LatInput,lon: s.LonInput, code: s.CodeInput});
+		if(s.Data.locations == undefined){
+			s.Data.locations = [];
+		}
+		s.Data.locations.push({title: s.TitleInput, clue: s.ClueInput, instruction: s.InstructionInput, lat: s.LatInput,lon: s.LonInput, code: s.CodeInput});
 		console.log('added waypoint');
 	}
 
